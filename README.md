@@ -1,7 +1,7 @@
 # pytorch NLP入门  复现一些NLP论文/传统机器学习算法
 
-## contributor
-    安洋 
+## contributors
+    
     
 ## 要求
 - 代码风格统一，函数不冗余，库版本统一
