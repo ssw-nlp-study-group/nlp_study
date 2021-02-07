@@ -4,18 +4,14 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.utils.data as tud
-
 from collections import Counter
 import numpy as np
 import random
-import math
+from torch.utils.tensorboard import SummaryWriter
 
-import pandas as pd
-import scipy
-import sklearn
-from sklearn.metrics.pairwise import cosine_similarity
+# default `log_dir` is "runs" - we'll be more specific here
+writer = SummaryWriter('../runs/fashion_mnist_experiment_1')
 
 # 判断是否有GPU
 USE_CUDA = torch.cuda.is_available()
@@ -27,6 +23,9 @@ torch.manual_seed(1)
 
 if USE_CUDA:
     torch.cuda.manual_seed(1)
+
+# default `log_dir` is "runs" - we'll be more specific here
+writer = SummaryWriter('../runs/fashion_mnist_experiment_1')
 
 
 def get_words(data_file):
@@ -73,18 +72,34 @@ class word_embedding_dataset(tud.Dataset):
         return self.skip_grams[idx]
 
 
+def find_nearest_k(word, k):
+    wid = words2id[word]
+    w_vec = wordvec[wid]
+
+    similarity = wordvec @ w_vec.T
+    sort = np.sort(similarity)[::-1]
+    sort_arg = np.argsort(similarity)[::-1]
+
+    result = []
+    for i in sort_arg:
+        result.append(id2words[i])
+
+    print("与 %s 相似度排序" % word, result)
+
+    return result[:k]
+
+
 class embedding_model(nn.Module):
     def __init__(self, voc_size, emb_size):
         super(embedding_model, self).__init__()
         self.voc_size = voc_size
         self.emb_size = emb_size
-        initrange = 0.5 / self.emb_size
 
-        self.in_embed = nn.Embedding(self.voc_size, self.emb_size)
-        self.out_embed = nn.Embedding(self.voc_size, self.emb_size)
-
-        # self.out_embed.weight.data.uniform_(-initrange, initrange)
-        # self.in_embed.weight.data.uniform_(-initrange, initrange)
+        init_range = 0.5 / self.emb_size
+        self.in_embed = nn.Embedding(num_embeddings=self.voc_size, embedding_dim=emb_size)
+        self.in_embed.weight.data.uniform_(-init_range, init_range)
+        self.out_embed = nn.Embedding(num_embeddings=self.voc_size, embedding_dim=emb_size)
+        self.out_embed.weight.data.uniform_(-init_range, init_range)
 
     def forward(self, input_labels, pos_labels, neg_labels):
         # shape (1,embedding_size)
@@ -98,22 +113,13 @@ class embedding_model(nn.Module):
         neg_embedding = neg_embedding.unsqueeze(0)
 
         pos_dot = torch.bmm(pos_embedding, input_embedding)
-        neg_dot = torch.bmm(neg_embedding, input_embedding)
+        neg_dot = torch.bmm(neg_embedding, -input_embedding)
 
         log_pos = torch.sigmoid(pos_dot).sum(1)
-        print(log_pos)
         log_neg = torch.sigmoid(neg_dot).sum(1)
 
-        print(log_neg)
-        # print(log_neg)
-
-        # print(pos_dot)
-        # print(neg_dot)
-
-        # print(input_embedding.shape)
-        # print(pos_embedding.shape)
-        # print(neg_embedding.shape)
-        # print(input_labels)
+        loss = (-log_pos - log_neg).squeeze()
+        return loss
 
 
 def words2id_func(words):
@@ -121,19 +127,25 @@ def words2id_func(words):
 
 
 if __name__ == '__main__':
-    # 设定超参数（hyper parameters）
     data_file = "../data/zhihu.txt"
+    model_file = "../model/word2vec_negative_sampling.pkl"
+    # 设定超参数（hyper parameters）
     # 负采样个数k
-    k = 20
+    k = 5
     embedding_size = 8
     context_size = 2
+    lr = 1e-2
+    num_epoch = 800
+
+    # 数据处理
     lines, words2id, id2words, words_set, words, words_freq_num, words_freq_p = \
         get_words(data_file=data_file)
 
+    # 不重复单词个数
     voc_size = len(words_set)
-    # print(Counter(words).most_common(4))
 
-    skip_grams = get_skip_pairs([lines[0]], context_size=2)
+    # 根据文本获取 训练数据 pairs [(input,output),...]
+    skip_grams = get_skip_pairs(lines, context_size=2)
 
     model = embedding_model(voc_size=voc_size, emb_size=embedding_size)
 
@@ -141,37 +153,49 @@ if __name__ == '__main__':
 
     indexs = torch.multinomial(torch.Tensor(words_freq_p), k, replacement=True)
 
-    # print(dict(words_freq_num))
+    optimizer = torch.optim.SGD(model.parameters(), lr=lr)
 
     word_freq_indexs = {}
     for i, (word, freq) in enumerate(words_freq_num):
         word_freq_indexs[word] = i
 
-    # print(word_freq_indexs)
-    # print(np.array(words_freq_num)[indexs.numpy()])
-    # print(indexs.numpy())
+    index = 0
+    # 词向量训练部分
+    for j in range(num_epoch):
+        for i, skip_gram in enumerate(dataset):
+            center_word = words2id[skip_gram[0]]
+            context_words_id = [words2id[word] for word in skip_gram[1]]
+            context_words = skip_gram[1]
+            p = words_freq_p.copy()
 
-    for i, skip_gram in enumerate(dataset):
-        center_word = words2id[skip_gram[0]]
-        context_words_id = [words2id[word] for word in skip_gram[1]]
-        context_words = skip_gram[1]
-        p = words_freq_p[:]
+            for context in context_words:
+                p[word_freq_indexs[context]] = 0
 
-        for context in context_words:
-            p[word_freq_indexs[context]] = 0
+            neg_words_sample = torch.multinomial(torch.Tensor(p), k, replacement=True)
+            neg_words = words2id_func(words_freq_num[neg_words_sample.numpy()][:, 0])
+            context_words = words2id_func(context_words)
 
-        neg_words_sample = torch.multinomial(torch.Tensor(p), k, replacement=True)
-        # print(words_freq_num)
-        # neg_words = np.array([words2id[word] for word in words_freq_num[neg_words_sample.numpy()][:, 0]])
-        neg_words = words2id_func(words_freq_num[neg_words_sample.numpy()][:, 0])
-        context_words = words2id_func(context_words)
-        # print(center_word)
-        # print(neg_words)
-        # print(context_words)
+            optimizer.zero_grad()
 
-        model(torch.LongTensor([center_word]), torch.LongTensor(context_words), torch.LongTensor(neg_words))
-        # model(torch.LongTensor([23]), torch.LongTensor(neg_words), torch.LongTensor(context_words))
-        break
-        # print(neg_words)
-        # print(context_words)
-        # print(center_word, context_words)
+            loss = model(torch.LongTensor([center_word]), torch.LongTensor(context_words), torch.LongTensor(neg_words))
+            if index % 1000 == 0:
+                print(loss.item())
+
+            loss.backward()
+            optimizer.step()
+            writer.add_scalar("loss", loss.item(), index)
+            index += 1
+
+    # 保存模型
+    torch.save(model, model_file)
+
+    model = torch.load(model_file)
+
+    for name, param in model.named_parameters():
+        # 获取in_embed的参数作为词向量 out_embed可舍弃
+        if name == "in_embed.weight":
+            wordvec = param.data.numpy()
+
+    # 获取最相近的k个词向量
+    result = find_nearest_k('什么', k=4)
+    print(result)
