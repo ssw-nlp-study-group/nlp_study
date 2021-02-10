@@ -9,9 +9,16 @@ from collections import Counter
 import numpy as np
 import random
 from torch.utils.tensorboard import SummaryWriter
+from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
+
+import matplotlib.pyplot as plt
+# 设置plt显示中文问题
+plt.rcParams['font.sans-serif'] = ['SimHei']
+# plt.rcParams['axes.unicode_minus'] = False
 
 # default `log_dir` is "runs" - we'll be more specific here
-writer = SummaryWriter('../runs/fashion_mnist_experiment_1')
+writer = SummaryWriter('../runs/word2vec_skip_gram_negative_sampling')
 
 # 判断是否有GPU
 USE_CUDA = torch.cuda.is_available()
@@ -25,7 +32,7 @@ if USE_CUDA:
     torch.cuda.manual_seed(1)
 
 # default `log_dir` is "runs" - we'll be more specific here
-writer = SummaryWriter('../runs/fashion_mnist_experiment_1')
+writer = SummaryWriter('../runs/word2vec_skip_gram_negative_sampling')
 
 
 def get_words(data_file):
@@ -159,35 +166,35 @@ if __name__ == '__main__':
     for i, (word, freq) in enumerate(words_freq_num):
         word_freq_indexs[word] = i
 
-    index = 0
-    # 词向量训练部分
-    for j in range(num_epoch):
-        for i, skip_gram in enumerate(dataset):
-            center_word = words2id[skip_gram[0]]
-            context_words_id = [words2id[word] for word in skip_gram[1]]
-            context_words = skip_gram[1]
-            p = words_freq_p.copy()
-
-            for context in context_words:
-                p[word_freq_indexs[context]] = 0
-
-            neg_words_sample = torch.multinomial(torch.Tensor(p), k, replacement=True)
-            neg_words = words2id_func(words_freq_num[neg_words_sample.numpy()][:, 0])
-            context_words = words2id_func(context_words)
-
-            optimizer.zero_grad()
-
-            loss = model(torch.LongTensor([center_word]), torch.LongTensor(context_words), torch.LongTensor(neg_words))
-            if index % 1000 == 0:
-                print(loss.item())
-
-            loss.backward()
-            optimizer.step()
-            writer.add_scalar("loss", loss.item(), index)
-            index += 1
-
-    # 保存模型
-    torch.save(model, model_file)
+    # index = 0
+    # # 词向量训练部分
+    # for j in range(num_epoch):
+    #     for i, skip_gram in enumerate(dataset):
+    #         center_word = words2id[skip_gram[0]]
+    #         context_words_id = [words2id[word] for word in skip_gram[1]]
+    #         context_words = skip_gram[1]
+    #         p = words_freq_p.copy()
+    #
+    #         for context in context_words:
+    #             p[word_freq_indexs[context]] = 0
+    #
+    #         neg_words_sample = torch.multinomial(torch.Tensor(p), k, replacement=True)
+    #         neg_words = words2id_func(words_freq_num[neg_words_sample.numpy()][:, 0])
+    #         context_words = words2id_func(context_words)
+    #
+    #         optimizer.zero_grad()
+    #
+    #         loss = model(torch.LongTensor([center_word]), torch.LongTensor(context_words), torch.LongTensor(neg_words))
+    #         if index % 1000 == 0:
+    #             print(loss.item())
+    #
+    #         loss.backward()
+    #         optimizer.step()
+    #         writer.add_scalar("loss", loss.item(), index)
+    #         index += 1
+    #
+    # # 保存模型
+    # torch.save(model, model_file)
 
     model = torch.load(model_file)
 
@@ -195,6 +202,19 @@ if __name__ == '__main__':
         # 获取in_embed的参数作为词向量 out_embed可舍弃
         if name == "in_embed.weight":
             wordvec = param.data.numpy()
+
+    pca = PCA(n_components=2)
+    result = pca.fit_transform(wordvec)
+    plt.scatter(result[:, 0], result[:, 1])
+    print(id2words)
+    print(words_set)
+
+    for i in range(voc_size):
+        plt.annotate(id2words[i], xy=(result[i, 0], result[i, 1]))
+
+    plt.xlabel('奇数')
+    plt.ylabel('偶数')
+    plt.show()
 
     # 获取最相近的k个词向量
     result = find_nearest_k('什么', k=4)
