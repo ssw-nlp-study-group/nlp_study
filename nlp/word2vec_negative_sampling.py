@@ -166,35 +166,35 @@ if __name__ == '__main__':
     for i, (word, freq) in enumerate(words_freq_num):
         word_freq_indexs[word] = i
 
-    # index = 0
-    # # 词向量训练部分
-    # for j in range(num_epoch):
-    #     for i, skip_gram in enumerate(dataset):
-    #         center_word = words2id[skip_gram[0]]
-    #         context_words_id = [words2id[word] for word in skip_gram[1]]
-    #         context_words = skip_gram[1]
-    #         p = words_freq_p.copy()
-    #
-    #         for context in context_words:
-    #             p[word_freq_indexs[context]] = 0
-    #
-    #         neg_words_sample = torch.multinomial(torch.Tensor(p), k, replacement=True)
-    #         neg_words = words2id_func(words_freq_num[neg_words_sample.numpy()][:, 0])
-    #         context_words = words2id_func(context_words)
-    #
-    #         optimizer.zero_grad()
-    #
-    #         loss = model(torch.LongTensor([center_word]), torch.LongTensor(context_words), torch.LongTensor(neg_words))
-    #         if index % 1000 == 0:
-    #             print(loss.item())
-    #
-    #         loss.backward()
-    #         optimizer.step()
-    #         writer.add_scalar("loss", loss.item(), index)
-    #         index += 1
-    #
-    # # 保存模型
-    # torch.save(model, model_file)
+    index = 0
+    # 词向量训练部分
+    for j in range(num_epoch):
+        for i, skip_gram in enumerate(dataset):
+            center_word = words2id[skip_gram[0]]
+            context_words_id = [words2id[word] for word in skip_gram[1]]
+            context_words = skip_gram[1]
+            p = words_freq_p.copy()
+
+            for context in context_words:
+                p[word_freq_indexs[context]] = 0
+
+            neg_words_sample = torch.multinomial(torch.Tensor(p), k, replacement=True)
+            neg_words = words2id_func(words_freq_num[neg_words_sample.numpy()][:, 0])
+            context_words = words2id_func(context_words)
+
+            optimizer.zero_grad()
+
+            loss = model(torch.LongTensor([center_word]), torch.LongTensor(context_words), torch.LongTensor(neg_words))
+            if index % 1000 == 0:
+                print(loss.item())
+
+            loss.backward()
+            optimizer.step()
+            writer.add_scalar("loss", loss.item(), index)
+            index += 1
+
+    # 保存模型
+    torch.save(model, model_file)
 
     model = torch.load(model_file)
 
@@ -217,5 +217,5 @@ if __name__ == '__main__':
     plt.show()
 
     # 获取最相近的k个词向量
-    result = find_nearest_k('什么', k=4)
+    result = find_nearest_k('猪', k=4)
     print(result)
