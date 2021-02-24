@@ -6,8 +6,10 @@ import torch
 import numpy as np
 import math
 import torch.optim as optim
+from util import data,util
+import torch.utils.data.dataloader as DataLoader
 
-
+# 暂未实现双向lstm  双向lstm适用于长文本 保存上下文信息
 class lstm_model(nn.Module):
     def __init__(self, input_sz: int, hidden_sz: int):
         super(lstm_model, self).__init__()
@@ -66,7 +68,10 @@ class lstm_model(nn.Module):
 
             hidden_seq.append(h_t)
 
-        return hidden_seq, (h_t, c_t)
+        lstm_output = torch.cat(hidden_seq, dim=0)
+        lstm_output = lstm_output.view(-1, hidden_seq[0].shape[0], hidden_seq[0].shape[1])
+
+        return lstm_output, (h_t, c_t)
 
 
 class net(nn.Module):
@@ -76,10 +81,13 @@ class net(nn.Module):
         self.hidden_sz = hidden_sz
 
         self.emb = nn.Embedding(n_class + 1, n_emb)
-        self.lstm = lstm_model(self.input_sz, self.hidden_sz)
+        self.lstm = lstm_model(n_emb, self.hidden_sz)
         self.fc = nn.Linear(hidden_sz, n_class)
 
     def forward(self, x):
+        x = x.long()
+        x = self.emb(x)
+
         # 10 3 26
         output, (_, _) = self.lstm(x)
 
@@ -90,29 +98,19 @@ class net(nn.Module):
         return output
 
 
-def make_batch():
-    input_batch, target_batch = [], []
-
-    for seq in seq_data:
-        input = [word_dict[n] for n in seq[:-1]]  # 'm', 'a' , 'k' is input
-        target = word_dict[seq[-1]]  # 'e' is target
-        input_batch.append(np.eye(n_class)[input])
-        target_batch.append(target)
-
-    return input_batch, target_batch
-
-
 if __name__ == '__main__':
     n_emb = 16
-    char_arr = [c for c in 'abcdefghijklmnopqrstuvwxyz']
 
-    word_dict = {n: i for i, n in enumerate(char_arr)}
-    number_dict = {i: w for i, w in enumerate(char_arr)}
-    n_class = len(word_dict)  # number of class(=number of vocab)
+    datas = data.word_seq_datas()
 
-    seq_data = ['make', 'need', 'coal', 'word', 'love', 'hate', 'live', 'home', 'hash', 'star']
+    n_class = datas.dict_len  # number of class(=number of vocab)
 
-    input_batch, target_batch = make_batch()
+    loader = DataLoader.DataLoader(dataset=datas, batch_size=len(datas))
+    input_batch, target_batch = iter(loader).next()
+
+    # 转换为float32
+    input_batch = input_batch.float()
+
     input_batch = torch.FloatTensor(input_batch)
     target_batch = torch.LongTensor(target_batch)
 
@@ -137,6 +135,6 @@ if __name__ == '__main__':
         loss.backward()
         optimizer.step()
 
-    inputs = [sen[:3] for sen in seq_data]
+    inputs = [sen[:3] for sen in datas.seq_data]
     predict = model(input_batch).data.max(1, keepdim=True)[1]
-    print(inputs, '->', [number_dict[n.item()] for n in predict.squeeze()])
+    print(inputs, '->', [datas.number_dict[n.item()] for n in predict.squeeze()])
