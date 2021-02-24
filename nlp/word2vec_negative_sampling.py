@@ -12,21 +12,11 @@ from torch.utils.tensorboard import SummaryWriter
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 
-import matplotlib.pyplot as plt
-# 设置plt显示中文问题
-plt.rcParams['font.sans-serif'] = ['SimHei']
-# plt.rcParams['axes.unicode_minus'] = False
-
 # default `log_dir` is "runs" - we'll be more specific here
 writer = SummaryWriter('../runs/word2vec_skip_gram_negative_sampling')
 
 # 判断是否有GPU
 USE_CUDA = torch.cuda.is_available()
-
-# 固定随机种子，以防止多次训练结果不一致
-random.seed(1)
-np.random.seed(1)
-torch.manual_seed(1)
 
 if USE_CUDA:
     torch.cuda.manual_seed(1)

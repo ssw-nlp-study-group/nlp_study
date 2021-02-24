@@ -13,6 +13,7 @@
 ## 第一章 Word2Vec's SkipGram NegativeSampling
 - skip-gram
 - 负样本采样 negative sampling 	[论文](https://proceedings.neurips.cc/paper/2013/file/9aa42b31882ec039965f3c4923ce901b-Paper.pdf)
-
-
+## 第二章 lstm
+## 第三章 attention
+- [Attention is All you need](https://arxiv.org/pdf/1706.03762.pdf)
 
