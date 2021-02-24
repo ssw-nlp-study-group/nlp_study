@@ -2,11 +2,13 @@
 
 ## contributors
 - 安洋
+
 ## 项目介绍 update 2021.2.24
 - 项目持续更新中
 - 本项目主要用于学习nlp知识，中间会用到一些网上的代码，主要力求简单简洁
 - 因为本人刚刚开始学习nlp不久，主要是希望和一些小伙伴通过coding快速学习入门
 - 因为学生训练资源不足，所以尽量使训练数据简单，本项目很多实例都没有数据集，仅仅有一个字符串，因此会牺牲一些效果达不到自己心中的想法 ps:这方面还在努力想办法
+- 并不注重调参，主要在于模型实现和优缺点理解
 
 ## 后续改进
 - 统一使用dataset和dataloader
@@ -27,4 +29,4 @@
 - lstm + attention
 ## 第三章 attention
 - [Attention is All you need](https://arxiv.org/pdf/1706.03762.pdf)
-
+## 第四章 transformer
