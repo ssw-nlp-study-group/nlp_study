@@ -12,72 +12,7 @@ import torch.utils.data.dataloader as DataLoader
 import torch.nn.functional as F
 from nlp.lstm import lstm_model
 
-# 给lstm加上attention
-# # 参考 https://www.bilibili.com/video/BV1qZ4y1H7Pg
-# class lstm_model_attention(nn.Module):
-#     def __init__(self, input_sz: int, hidden_sz: int):
-#         super(lstm_model_attention, self).__init__()
-#
-#         # input_sz 输入的数组长度
-#         self.input_sz = input_sz
-#         # hidden_sz cell_state和hidden_state长度
-#         self.hidden_sz = hidden_sz
-#
-#         # i_t 遗忘
-#         self.w_i = nn.Parameter(torch.Tensor(input_sz, hidden_sz))
-#         self.u_i = nn.Parameter(torch.Tensor(hidden_sz, hidden_sz))
-#         self.b_i = nn.Parameter(torch.Tensor(hidden_sz))
-#
-#         # f_t
-#         self.w_f = nn.Parameter(torch.Tensor(input_sz, hidden_sz))
-#         self.u_f = nn.Parameter(torch.Tensor(hidden_sz, hidden_sz))
-#         self.b_f = nn.Parameter(torch.Tensor(hidden_sz))
-#
-#         # c_t
-#         self.w_c = nn.Parameter(torch.Tensor(input_sz, hidden_sz))
-#         self.u_c = nn.Parameter(torch.Tensor(hidden_sz, hidden_sz))
-#         self.b_c = nn.Parameter(torch.Tensor(hidden_sz))
-#
-#         # o_t
-#         self.w_o = nn.Parameter(torch.Tensor(input_sz, hidden_sz))
-#         self.u_o = nn.Parameter(torch.Tensor(hidden_sz, hidden_sz))
-#         self.b_o = nn.Parameter(torch.Tensor(hidden_sz))
-#
-#         self.init_weights()
-#
-#     def init_weights(self):
-#         stdv = 1.0 / math.sqrt(self.hidden_sz)
-#         for weight in self.parameters():
-#             weight.data.uniform_(-stdv, stdv)
-#
-#     def forward(self, x):
-#         # x (batch_size批数据长度,序列长度seq_sz,单条数据长度,data_len)
-#         bs, seq_sz = x.shape[0], x.shape[1]
-#
-#         # hidden_state和cell_state 用来保存短期和长期记忆
-#         h_t = torch.zeros(bs, self.hidden_sz)
-#         c_t = torch.zeros(bs, self.hidden_sz)
-#
-#         hidden_seq = []
-#         # 原始的lstm实现 参考pytorch官网的lstm公式
-#         # https://pytorch.org/docs/stable/generated/torch.nn.LSTM.html#torch.nn.LSTM
-#         for i in range(seq_sz):
-#             input = x[:, i, :]
-#             f_t = torch.sigmoid(input @ self.w_f + h_t @ self.u_f + self.b_f)
-#             i_t = torch.sigmoid(input @ self.w_i + h_t @ self.u_i + self.b_i)
-#             o_t = torch.sigmoid(input @ self.w_o + h_t @ self.u_o + self.b_o)
-#             g_t = torch.tanh(input @ self.w_c + h_t @ self.u_c + self.b_c)
-#             c_t = f_t * c_t + i_t * g_t
-#             h_t = o_t * torch.tanh(c_t)
-#
-#             hidden_seq.append(h_t)
-#
-#         lstm_output = torch.cat(hidden_seq, dim=0)
-#         lstm_output = lstm_output.view(-1, hidden_seq[0].shape[0], hidden_seq[0].shape[1])
-#
-#         return lstm_output, (h_t, c_t)
-
-
+# 给lstm加上attention注意力机制
 class net(nn.Module):
     def __init__(self, input_sz, hidden_sz):
         super(net, self).__init__()

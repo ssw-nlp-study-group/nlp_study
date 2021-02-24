@@ -124,7 +124,7 @@ def words2id_func(words):
 
 
 if __name__ == '__main__':
-    data_file = "../data/zhihu.txt"
+    data_file = "../data/data.txt"
     model_file = "../model/word2vec_negative_sampling.pkl"
     # 设定超参数（hyper parameters）
     # 负采样个数k
