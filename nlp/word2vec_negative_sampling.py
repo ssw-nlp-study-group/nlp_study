@@ -12,6 +12,9 @@ from torch.utils.tensorboard import SummaryWriter
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 
+# 由于word2vec的skip gram方法在单词数很大的情况下需要训练费用无法承受
+# 因此使用负样本采样的方法代替，节省训练时间，并且结果上也是近似 将一个多分类问题转换为多个二分类问题
+
 # default `log_dir` is "runs" - we'll be more specific here
 writer = SummaryWriter('../runs/word2vec_skip_gram_negative_sampling')
 
@@ -112,7 +115,9 @@ class embedding_model(nn.Module):
         pos_dot = torch.bmm(pos_embedding, input_embedding)
         neg_dot = torch.bmm(neg_embedding, -input_embedding)
 
+        # 正样本
         log_pos = torch.sigmoid(pos_dot).sum(1)
+        # 负样本
         log_neg = torch.sigmoid(neg_dot).sum(1)
 
         loss = (-log_pos - log_neg).squeeze()
@@ -168,6 +173,9 @@ if __name__ == '__main__':
             for context in context_words:
                 p[word_freq_indexs[context]] = 0
 
+            # 对负样本-即非 target的部分按照频率归一化后的概率进行采样
+            # 正样本部分保持不变
+            # 取样个数取决于k值
             neg_words_sample = torch.multinomial(torch.Tensor(p), k, replacement=True)
             neg_words = words2id_func(words_freq_num[neg_words_sample.numpy()][:, 0])
             context_words = words2id_func(context_words)
@@ -193,6 +201,7 @@ if __name__ == '__main__':
         if name == "in_embed.weight":
             wordvec = param.data.numpy()
 
+    # 利用pca对词向量进行降维 方便画图展示
     pca = PCA(n_components=2)
     result = pca.fit_transform(wordvec)
     plt.scatter(result[:, 0], result[:, 1])
