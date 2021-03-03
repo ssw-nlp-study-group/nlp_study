@@ -1,7 +1,7 @@
 # pytorch NLP入门  复现一些NLP论文/传统机器学习算法
 
 ## contributors
-- 安洋
+- 安洋  ps: 目前就一个人，疯狂暗示
 
 ## 项目介绍 update 2021.2.24
 - 项目持续更新中
@@ -32,6 +32,6 @@
 ## 第三章 transformer+attention
 - [transformer](https://github.com/ssw-nlp-study-group/nlp_study/blob/main/nlp/transformer.py)
  - [Attention is All you need](https://arxiv.org/pdf/1706.03762.pdf)
-## 第四章 机器学习相关算法(西瓜书)
-- [交叉熵的理解 nn.CrossEntropyLoss](https://github.com/ssw-nlp-study-group/nlp_study/blob/main/machine_learning/cross_entropyloss.py)
+## 第四章 机器学习相关算法(西瓜书+李航线性 待补充 qwq)
+- [交叉熵 nn.CrossEntropyLoss](https://github.com/ssw-nlp-study-group/nlp_study/blob/main/machine_learning/cross_entropyloss.py)
 - [svm(smo算法)](https://github.com/ssw-nlp-study-group/nlp_study/blob/main/machine_learning/svm.py)
