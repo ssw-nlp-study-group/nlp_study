@@ -27,11 +27,11 @@
  - [论文](https://proceedings.neurips.cc/paper/2013/file/9aa42b31882ec039965f3c4923ce901b-Paper.pdf)
 ## 第二章 lstm
 - [lstm](https://github.com/ssw-nlp-study-group/nlp_study/blob/main/nlp/lstm.py)  
- - [LONG SHORT-TERM MEMORY(1997)](https://www.bioinf.jku.at/publications/older/2604.pdf)
+    - [论文: LONG SHORT-TERM MEMORY(1997)](https://www.bioinf.jku.at/publications/older/2604.pdf)
 - [lstm + attention](https://github.com/ssw-nlp-study-group/nlp_study/blob/main/nlp/lstm_with_attention.py)
 ## 第三章 transformer+attention
 - [transformer](https://github.com/ssw-nlp-study-group/nlp_study/blob/main/nlp/transformer.py)
- - [Attention is All you need](https://arxiv.org/pdf/1706.03762.pdf)
+    - [论文: Attention is All you need](https://arxiv.org/pdf/1706.03762.pdf)
 ## 第四章 机器学习相关算法(西瓜书+李航线性 待补充 qwq)
 - [交叉熵 nn.CrossEntropyLoss](https://github.com/ssw-nlp-study-group/nlp_study/blob/main/machine_learning/cross_entropyloss.py)
 - [svm(smo算法)](https://github.com/ssw-nlp-study-group/nlp_study/blob/main/machine_learning/svm.py)
