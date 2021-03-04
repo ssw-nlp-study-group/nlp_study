@@ -21,7 +21,6 @@ def make_batch(sentences):
 # 解释之前的mask是什么意思。
 # 在decoder里面，我们也很想让当前decode layer的每一个位置，能处理上一层decode layer的每一个位置。
 # 但为了不发生信息穿越，decode layer做self-attention时，不应该注意到自己之后的位置（因为自己之后的位置此时并没有输出任何东西）。
-# 所以我们用mask技术，把上三角遮住了【不给看】
 def get_attn_pad_mask(seq_q, seq_k):
     batch_size, len_q = seq_q.size()
     batch_size, len_k = seq_k.size()
@@ -30,7 +29,7 @@ def get_attn_pad_mask(seq_q, seq_k):
     pad_attn_mask = seq_k.data.eq(0).unsqueeze(1)  # batch_size x 1 x len_k(=len_q), one is masking
     return pad_attn_mask.expand(batch_size, len_q, len_k)  # batch_size x len_q x len_k
 
-
+# 所以我们用mask技术，把上三角遮住了【不给看】
 def get_attn_subsequent_mask(seq):
     attn_shape = [seq.size(0), seq.size(1), seq.size(1)]
     subsequent_mask = np.triu(np.ones(attn_shape), k=1)

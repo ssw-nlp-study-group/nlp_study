@@ -60,7 +60,6 @@ class net(nn.Module):
 
 
 if __name__ == '__main__':
-
     # embbding层长度
     n_emb = 16
 
