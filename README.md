@@ -35,3 +35,5 @@
 ## 第四章 机器学习相关算法(西瓜书+李航线性 待补充 qwq)
 - [交叉熵 nn.CrossEntropyLoss](https://github.com/ssw-nlp-study-group/nlp_study/blob/main/machine_learning/cross_entropyloss.py)
 - [svm(smo算法)](https://github.com/ssw-nlp-study-group/nlp_study/blob/main/machine_learning/svm.py)
+- [svd奇异值分解](https://github.com/ssw-nlp-study-group/nlp_study/blob/main/machine_learning/svd.py)
+- [svd图片压缩](https://github.com/ssw-nlp-study-group/nlp_study/blob/main/machine_learning/svd_img_compress.py)
