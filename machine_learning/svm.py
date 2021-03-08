@@ -3,226 +3,128 @@
 # @Time: 2021/3/2 2:25 下午
 import numpy as np
 from numpy import *
+import util.util
 import matplotlib.pyplot as plt
 
-def plotFeature(dataSet, labelMat, weights, b):
-    dataArr = dataSet
-    n = shape(dataArr)[0]
-    xcord1 = []
-    ycord1 = []
-    xcord2 = []
-    ycord2 = []
-    # print(dataArr[0][0])
-    # print(int(labelMat[9]))
-    for i in range(n):
-        if int(labelMat[i]) == 1:
-            xcord1.append(dataArr[i][0])
-            ycord1.append(dataArr[i][1])
-        else:
-            xcord2.append(dataArr[i][0])
-            ycord2.append(dataArr[i][1])
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    ax.scatter(xcord1, ycord1, s=30, c='red', marker='s')
-    ax.scatter(xcord2, ycord2, s=30, c='green')
-    x = arange(-1, 7.0, 0.2)
-    # print(shape(-b - weights[0][0] * x))
-    # print(shape(weights[1][0]))
+# 参考知乎svm推导,最简单的svm实现
+# link: 机器学习算法实践-SVM中的SMO算法 - 邵正将的文章 - 知乎
+# https://zhuanlan.zhihu.com/p/29212107
+# 由于缓存e_i等问题属于工程问题，所以为了保证代码简洁，暂时不加上了
+# smo本来i选择违背kkt条件最大的，这里直接暴力选取了，因为每次选取迭代一对alpha也可以达到效果，只是前者效率更高
 
-    y = (-b - weights[0][0] * x) / weights[1][0]
-    ax.plot(x, y.A[0])
-    plt.xlabel('X1')
-    plt.ylabel('X2')
-    plt.show()
+# svm步骤
+# 1. 选取一堆a_i,a_j
+# 2. 计算a_i_new,a_j_new
+# 3. 对a进行clip(必须满足kkt条件 0<=a<=C)
+# 4. 根据新的a计算b(计算公式也是kkt条件之一),同样考虑kkt条件a在边界0 or c具有不同的公式，若在边界内部，则b1=b2
+# 5. 收敛之后计算w
 
-
-class struct:
-    def __init__(self, dataSet, labels, C, toler):
-        self.dataSet = dataSet
-        self.labels = labels
-        self.C = C
-        self.toler = toler
-        self.m = shape(dataSet)[0]  # 100
-        self.alphas = mat(zeros((self.m, 1)))
-        self.b = 0
-        self.eCache = mat(zeros((self.m, 2)))
-
-
-def loadDataSet(fileName):
-    dataMat = []
-    labelMat = []
-    with open(fileName) as fr:
-        for line in fr.readlines():
-            lineArr = line.strip().split('a')
-            dataMat.append([float(lineArr[0]), float(lineArr[1])])
-            labelMat.append(float(lineArr[2]))
-    return dataMat, labelMat
-
-
-def calcEk(i, struct):
-    left = multiply(struct.alphas, mat(struct.labels).transpose())
-    left = left.T
-    right = dot(struct.dataSet, mat(struct.dataSet[i]).T)
-    fx = dot(left, right) + struct.b
-    ek = fx - struct.labels[i]
-    return ek.A[0][0]
-
-
-def calcWs(struct):
-    m, n = shape(struct.dataSet)
-    w = zeros((1, n))
-    # struct.alphas[0][0] = 1
-    # struct.alphas[1][0] = 2
-    left = multiply(struct.alphas, mat(struct.labels).transpose())
-    # print(left.T)
-    # print(struct.dataSet)
-
-    # print(shape(left[0] * struct.dataSet[0]))
-    for i in range(struct.m):
-        w += left[i] * struct.dataSet[i]
-    return w
-
-
-def updateEk(i, struct):
-    eki = calcEk(i, struct)
-    struct.eCache[i] = [1, eki]
-    return eki
-
-
-# 随机选择一个不等于i的下标
-def selectJrand(i, struct):
+# 特别简单:计算不等于i的j
+def selectj(i, n):
     j = i
-    while j == i:
-        j = int(random.uniform(0, struct.m))
+    while (j == i):
+        j = np.random.randint(0, n)
     return j
 
-
-def selectJ(i, struct):
-    eki = updateEk(i, struct)
-    cacheList = nonzero(struct.eCache[:, 0].A)[0]
-
-    maxDeltaE = 0
-    jIndex = -1
-    if (len(cacheList) > 1):
-        print(cacheList)
-        for k in cacheList:
-            if k != i:
-                ekj = calcEk(k, struct)
-                delta = abs(eki - ekj)
-                if (delta > maxDeltaE):
-                    maxDeltaE = delta
-                    jIndex = k
-        return jIndex
-    else:
-        return selectJrand(i, struct)
-    # for j in range(struct.m):
-    #     if (i != j):
-    #         ekj = calcEk(j, struct)
-    #         if (abs(eki - ekj) > maxDeltaE):
-    #             maxDeltaE = abs(eki - ekj)
-    #             jIndex = j
-    #
-    # return jIndex
+# 计算k_ij
+def calc_k(i, j):
+    return x[i] @ x[j]
 
 
-def clipAlpha(alpha, L, H):
-    if alpha <= L:
+def clip_alpha(a, L, H):
+    if a < L:
         return L
-    if alpha >= H:
+    if a > H:
         return H
-    return alpha
+    return a
 
 
-def innerL(i, struct):
-    j = selectJ(i, struct)
-    eki = updateEk(i, struct)
-    ekj = updateEk(j, struct)
+def calc_w():
+    # # 根据公式计算w
+    w = np.sum(alphas * y[:, np.newaxis] * x, axis=0)
+    return w
 
-    aiold = struct.alphas[i].copy()
-    ajold = struct.alphas[j].copy()
-
-    if ((struct.labels[i] * eki < -struct.toler) and (struct.alphas[i] < struct.C)) or (
-            (struct.labels[i] * eki > struct.toler) and (struct.alphas[i] > 0)):
-        eta = 2.0 * dot(struct.dataSet[i], struct.dataSet[j]) - dot(struct.dataSet[i], struct.dataSet[i]) - dot(
-            struct.dataSet[j], struct.dataSet[j])
-        if eta >= 0:
-            print("eta error,eta = " + eta)
-            return 0
-
-        if struct.labels[i] != struct.labels[j]:
-            L = max(0, struct.alphas[j] - struct.alphas[i])
-            H = min(struct.C, struct.C + struct.alphas[j] - struct.alphas[i])
-        else:
-            L = max(0, struct.alphas[j] + struct.alphas[i] - struct.C)
-            H = min(struct.C, struct.alphas[j] + struct.alphas[i])
-
-        if L == H:
-            return 0
-        struct.alphas[j] -= struct.labels[j] * (eki - ekj) / eta
-        struct.alphas[j] = clipAlpha(struct.alphas[j], L, H)
-
-        updateEk(j, struct)
-        if abs(struct.alphas[j] - ajold) < 0.00001:
-            # 变化太小
-            return 0
-
-        struct.alphas[i] += struct.labels[i] * struct.labels[j] * (ajold - struct.alphas[j])
-        updateEk(i, struct)
-        b1 = struct.b - eki - struct.labels[i] * (struct.alphas[i] - aiold) * dot(struct.dataSet[i],
-                                                                                  struct.dataSet[i]) - \
-             struct.labels[j] * (struct.alphas[j] - ajold) * dot(struct.dataSet[i], struct.dataSet[j])
-        b2 = struct.b - ekj - struct.labels[i] * (struct.alphas[i] - aiold) * dot(struct.dataSet[i],
-                                                                                  struct.dataSet[i]) - \
-             struct.labels[j] * (struct.alphas[j] - ajold) * dot(struct.dataSet[i], struct.dataSet[j])
-        if (0 < struct.alphas[i]) and (struct.alphas[i] < struct.C):
-            struct.b = b1
-        elif (0 < struct.alphas[j]) and (struct.alphas[j] < struct.C):
-            struct.b = b2
-        else:
-            struct.b = (b1 + b2) / 2.0
-        return 1
-    return 0
+# 为了效率可以将e_i缓存,但本代码仅仅是个demo，所以暂时不做处理
+def calc_e(i):
+    w = calc_w()
+    fx_i = x[i] @ w + b
+    e_i = fx_i - y[i]
+    return e_i
 
 
-def smop():
-    changed = 0
-    entireSet = True
-    maxIter = 100
-    iter = 0
+if __name__ == '__main__':
+    data = np.loadtxt('../data/svm.txt')
 
-    while True:
-        changed = 0
-        if entireSet:
-            for i in range(struct.m):
-                changed += innerL(i, struct)
-            entireSet = False
-            print("entire +1")
-            if changed == 0:
-                break
-        else:
-            nonBoundsIds = nonzero((struct.alphas.A > 0) * (struct.alphas.A < struct.C))[0]
-            for i in nonBoundsIds:
-                changed += innerL(i, struct)
-            print("non bounds +1")
-        if changed == 0:
-            entireSet = True
+    x = data[:, 0:2]
+    y = data[:, 2].astype(np.int)
 
-    # print(changed)
-    # print(nonBoundsIds)
-    # print(struct.alphas)
+    n, width = x.shape
+
+    alphas = np.zeros((n, 1))
+    b = 0
+    c = 2
+
+    # 迭代次数，可以写成while循环直至收敛
+    iters = 50
+
+    for iter in range(iters):
+        for i in range(n):
+            j = selectj(i, n)
+            k_ij = calc_k(i, j)
+            k_ii = calc_k(i, i)
+            k_jj = calc_k(j, j)
+
+            # k11+k22-2*k12
+            eta = k_ii + k_jj - 2 * k_ij
+
+            if eta <= 0:
+                print("eta <= 0, continue")
+                continue
+
+            e_i = calc_e(i)
+            e_j = calc_e(j)
+
+            alphas_j_new = alphas[j] + y[j] * (e_i - e_j) / eta
+
+            if not y[i] == y[j]:
+                L = np.max([0, alphas[j] - alphas[i]])
+                H = np.min([c, c + alphas[j] - alphas[i]])
+
+            if y[i] == y[j]:
+                L = np.max([0, alphas[i] + alphas[j] - c])
+                H = np.min([c, alphas[j] + alphas[i]])
+
+            if L >= H:
+                continue
+
+            alphas_j_old = alphas[j]
+            alphas_j_new = clip_alpha(alphas_j_new, L, H)
+            alphas_i_old = alphas[i]
+            alphas_i_new = alphas[i] + y[i] * y[j] * (alphas[j] - alphas_j_new)
+
+            # 更新计算的alpha
+            alphas[i] = alphas_i_new
+            alphas[j] = alphas_j_new
+
+            b1 = -e_i - y[i] * k_ii * (alphas_i_new - alphas_i_old) - y[j] * k_ij * (alphas_j_new - alphas_j_old) + b
+            b2 = -e_j - y[i] * k_ij * (alphas_i_new - alphas_i_old) - y[j] * k_jj * (alphas_j_new - alphas_j_old) + b
+
+            if 0 < alphas[j] < c:
+                b = b2
+            elif 0 < alphas[i] < c:
+                b = b1
+            else:
+                b = (b1 + b2) / 2
+
+    w = calc_w()
 
 
-trainDataSet, labels = loadDataSet("../data/testSet.txt")
-struct = struct(trainDataSet, labels, 2, 0.0001)
-
-# print(dot(struct.dataSet[0], struct.dataSet[1]))
-smop()
-
-# print(struct.alphas)
-
-ws = calcWs(struct)
-
-# print(ws)
-plotFeature(struct.dataSet, mat(struct.labels).transpose(), ws.transpose(), struct.b)
-
-# print(mat([1.2]).Tmat([3,4]))
+    # 将结果画图展示
+    x_arr = np.linspace(-2, 12, 20)
+    y_arr = -w[0] * x_arr / w[1] - b / w[1]
+    plt.plot(x_arr, y_arr, c='b')
+    x_1 = x[y == 1]
+    plt.scatter(x_1[:, 0], x_1[:, 1], c='r')
+    x_2 = x[y == -1]
+    plt.scatter(x_2[:, 0], x_2[:, 1], c='g')
+    plt.show()
