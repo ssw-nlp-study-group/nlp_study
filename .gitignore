@@ -2,3 +2,5 @@
 .DS_Store
 .idea/vcs.xml
 ./runs/
+# __pycache__
+*.png
