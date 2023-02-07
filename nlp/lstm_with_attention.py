@@ -7,6 +7,8 @@ import numpy as np
 import math
 import torch.optim as optim
 import random
+import sys, os
+sys.path.append(os.getcwd())
 from util import data, util
 import torch.utils.data.dataloader as DataLoader
 import torch.nn.functional as F
@@ -25,7 +27,7 @@ class net(nn.Module):
 
     # attention网络 个人理解 将attention信息通过训练保存在h_t中 对历史lstm_output进行加权
     def attn(self, lstm_output, h_t):
-        # lstm_output [3, 10, 16]  h_t[10, 16]
+        # lstm_output [3, 10, 16]  h_t[10, 16] # [D B C]
         h_t = h_t.unsqueeze(0)
         # [10, 16, 1]
         h_t = h_t.permute(1, 2, 0)
@@ -53,7 +55,7 @@ class net(nn.Module):
         # 对lstm_output做attention
         attn_out = self.attn(lstm_output, h_t)
 
-        # 10 16
+        # 10 26
         lstm_output = self.fc(attn_out)
         # [3]
         return lstm_output
