@@ -37,7 +37,7 @@ class net(nn.Module):
         attn_weights = attn_weights.permute(1, 0, 2).squeeze()
 
         # [3, 10]
-        attention = F.softmax(attn_weights, 1)
+        attention = F.softmax(attn_weights, 0) # 0号轴是字母序列轴，1号轴是batch，感觉应该是沿着0号轴做softmax，这样得到的才是对字母序列的注意力
         # bmm: [10, 16, 3] [10, 3, 1]
 
         attn_out = torch.bmm(lstm_output.transpose(1, 2), attention.unsqueeze(-1).transpose(1,0))
